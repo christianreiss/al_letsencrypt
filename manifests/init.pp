@@ -13,7 +13,7 @@ class al_letsencrypt (
   $email = false,
 
   # Option to override your DOCROOT_OVERRIDE
-  docroot_override = false,
+  $docroot_override = false,
 
 ) inherits al_letsencrypt::params {
 
