@@ -1,0 +1,81 @@
+#! /bin/bash
+
+#
+# Le Franzose!
+#
+LE_BIN="<%= scope.lookupvar('::al_letsencrypt::le_binary')%>"
+LE_ARGS="<%= scope.lookupvar('::al_letsencrypt::install::le_args')%>"
+LE_LOG="<%= scope.lookupvar('::al_letsencrypt::le_logdir')%>/letsencrypt.log"
+LE_DOMAIN="$1"
+LE_CRT="<%= scope.lookupvar('::al_letsencrypt::le_dir')%>/${LE_DOMAIN}/cert.pem"
+LE_DOCROOT="/var/www/vhosts/${LE_DOMAIN}"
+LE_DOCROOT_FAILBACK="/var/www/vhosts/<%=@fqdn%>"
+LE_DOCROOT_OVERRIDE=""
+
+#
+# Logging and Error.
+#
+function error {
+  echo "`date +%H:%M:%S` :: Error :: $*"
+  echo "`date +%H:%M:%S` :: Error :: $*" >> ${LE_LOG}
+  exit 2
+}
+
+function log {
+  echo "`date +%H:%M:%S` :: $*"
+  echo "`date +%H:%M:%S` :: $*" >> ${LE_LOG}
+}
+
+#
+# Load additional Config
+#
+if [ -e /etc/certbot_helper.conf ] ; then
+  log "Loading additional configuration."
+  source /etc/certbot_helper.conf
+fi
+
+#
+# Sanity Checks
+#
+if [ ! -e ${LE_BIN} ]; then
+  error "certbot not found (${LE_BIN})"
+fi
+
+#
+# We need a Domain.
+#
+if [ "${LE_DOMAIN}" == "" ]; then
+  error "Please supply a domain."
+fi
+
+#
+# We need a docroot.
+#
+if [ ${LE_DOCROOT_OVERRIDE} == "" ]; then
+  if [ ! -e "${LE_DOCROOT}" ]; then
+    if [ ! -e "${LE_DOCROOT_FAILBACK}" ]; then
+      error "Docroot ${LE_DOCROOT} does not exist."
+    else
+      DOCROOT="${LE_DOCROOT_FAILBACK}"
+    fi
+  else
+    DOCROOT="${LE_DOCROOT}"
+  fi
+else
+  DOCROOT="${LE_DOCROOT_OVERRIDE}"
+fi
+
+#
+# Check for domain existance.
+#
+if [ -e ${LE_CRT} ]; then
+  log "No action needed, cert for ${domain} already existing."
+  exit 0
+fi
+
+#
+# Run it.
+#
+log "Starting certbox for ${LE_DOMAIN}."
+${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} -d ${LE_DOMAIN} || error "Unable to request certificate for ${LE_DOMAIN}."
+log "Certificate for ${LE_DOMAIN} created successfully."
