@@ -5,31 +5,31 @@ class al_letsencrypt::config () {
 
     # Modify the letcencrypt dir
     file { '/etc/letsencrypt':
-      ensure => directory,
-      owner => 'root',
-      group => 'certs',
-      mode  => '0750',
+      ensure  => directory,
+      owner   => 'root',
+      group   => 'certs',
+      mode    => '0750',
       require => Class['al_letsencrypt::install'],
     }
     file { '/etc/letsencrypt/archive':
-      ensure => directory,
-      owner => 'root',
-      group => 'certs',
-      mode  => '0750',
+      ensure  => directory,
+      owner   => 'root',
+      group   => 'certs',
+      mode    => '0750',
       require => File['/etc/letsencrypt'],
     }
     file { '/etc/letsencrypt/live':
-      ensure => directory,
-      owner => 'root',
-      group => 'certs',
-      mode  => '0750',
+      ensure  => directory,
+      owner   => 'root',
+      group   => 'certs',
+      mode    => '0750',
       require => File['/etc/letsencrypt'],
     }
     file { '/etc/letsencrypt/dh':
-      ensure => directory,
-      owner => 'root',
-      group => 'certs',
-      mode  => '0750',
+      ensure  => directory,
+      owner   => 'root',
+      group   => 'certs',
+      mode    => '0750',
       require => File['/etc/letsencrypt'],
     }
 
@@ -59,12 +59,12 @@ class al_letsencrypt::config () {
 
     # Renew-Cron (add)
     cron { 'letsencrypt-renew':
-      ensure   => present,
-      command  => "${::al_letsencrypt::le_binary} renew --quiet --keep-until-expiring",
-      user     => 'root',
-      minute   => fqdn_rand(59, "${::fqdn}-le-renew"),
-      hour     => '4',
-      weekday  => fqdn_rand(6, "${::fqdn}-le-renew"),
+      ensure  => present,
+      command => "${::al_letsencrypt::le_binary} renew --quiet --keep-until-expiring",
+      user    => 'root',
+      minute  => fqdn_rand(59, "${::fqdn}-le-renew"),
+      hour    => '4',
+      weekday => fqdn_rand(6, "${::fqdn}-le-renew"),
     }
   } else {
     # Renew-Cron (remove)
