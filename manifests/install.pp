@@ -38,10 +38,6 @@ class al_letsencrypt::install () {
       default: { fail ('unknown OS.') }
     }
 
-    # Command line arguments for certbot.
-    $email = hiera('contact')
-    $le_args = "--webroot --noninteractive --keep-until-expiring --quiet --agree-tos --email ${email}"
-
     # OS Independet certbox helper.
     file {'/usr/local/sbin/certbot_helper.sh':
       ensure  => file,
@@ -52,7 +48,6 @@ class al_letsencrypt::install () {
     }
 
   } else {
-    # TODO: Uninstall stuff
 
     # Each OS is different.
     case ($::operatingsystem) {

@@ -9,6 +9,12 @@ class al_letsencrypt (
   # Should we monitor the expiration?
   $monitoring = true,
 
+  # Email we supply to LetsEncrypt
+  $email = false,
+
+  # Option to override your DOCROOT_OVERRIDE
+  docroot_override = false,
+
 ) inherits al_letsencrypt::params {
 
   # Include the rest of the class.
