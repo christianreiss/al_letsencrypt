@@ -76,7 +76,7 @@ fi
 #
 # Email or unsafe registratrion?
 #
-if [ "${LE_EMAIL}" != "" ] ;
+if [ "${LE_EMAIL}" != "" ]; then
   EMAIL_ARG="--email ${LE_EMAIL}"
 else
   EMAIL_ARG="--allow-unsafe-registration"
