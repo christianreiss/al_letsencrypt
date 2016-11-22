@@ -27,6 +27,7 @@ This module also..
 
  - generates DH params (/etc/letsencrypt/dh/$domain.dh)
  - generates nagios service checks (unless disabled)
+ - manages Zimbra Servers (set zimbra flag)
 
 ## Setup
 
@@ -72,6 +73,10 @@ location '/.well-known/acme-challenge' {
 this will catch all (ALL!) acme authentications for any domain served by
 nginx and redirect that into /var/www/vhosts/yourmaindir. So you can even
 get those certificate for nginx proxy vhosts that have no own docroots.
+
+If the server in question is a Zimbra server, enable Zimbra management:
+`al_letsencrypt::zimbra: true` 
+Currently WIP: Acting on renewed certificates. 
 
 Lastly, give the class an array of domains to create:
 
