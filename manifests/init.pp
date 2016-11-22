@@ -15,6 +15,9 @@ class al_letsencrypt (
   # Option to override your DOCROOT_OVERRIDE
   $docroot_override = false,
 
+  # Is this a Zimbra server?
+  $zimbra = false,
+
 ) inherits al_letsencrypt::params {
 
   # Include the rest of the class.

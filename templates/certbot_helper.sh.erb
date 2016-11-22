@@ -1,7 +1,7 @@
 #! /bin/bash
 
 #
-# Le Franzose!
+# Le French!
 #
 LE_BIN="<%= scope.lookupvar('::al_letsencrypt::le_binary')%>"
 LE_ARGS="--webroot --noninteractive --keep-until-expiring --quiet --agree-tos"
@@ -9,9 +9,12 @@ LE_LOG="<%= scope.lookupvar('::al_letsencrypt::le_logdir')%>/letsencrypt.log"
 LE_EMAIL="<%= scope.lookupvar('::al_letsencrypt::email')%>"
 LE_DOMAIN="$1"
 LE_CRT="<%= scope.lookupvar('::al_letsencrypt::le_dir')%>/${LE_DOMAIN}/cert.pem"
+LE_KEY="<%= scope.lookupvar('::al_letsencrypt::le_dir')%>/${LE_DOMAIN}/privkey.pem"
+LE_FULL="<%= scope.lookupvar('::al_letsencrypt::le_dir')%>/${LE_DOMAIN}/fullchain.pem"
 LE_DOCROOT="/var/www/vhosts/${LE_DOMAIN}"
 LE_DOCROOT_FAILBACK="/var/www/vhosts/<%=@fqdn%>"
 LE_DOCROOT_OVERRIDE="<%= scope.lookupvar('::al_letsencrypt::docroot_override')%>"
+IS_ZIMBRA=<%= scope.lookupvar('::al_letsencrypt::zimbra')%>
 
 #
 # Logging and Error.
@@ -86,6 +89,27 @@ fi
 #
 # Run it.
 #
+if [ ${IS_ZIMBRA} ] ; then
+  log "Zimbra: disabling nginx/proxy."
+  sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop 
+fi
+
 log "Starting certbox for ${LE_DOMAIN}."
 ${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} -d ${LE_DOMAIN} || error "Unable to request certificate for ${LE_DOMAIN}."
 log "Certificate for ${LE_DOMAIN} created successfully."
+
+
+if [ ${IS_ZIMBRA} ] ; then
+  log "Zimbra: Installing certificate."
+  /bin/cp -f ${LE_KEY} /opt/zimbra/ssl/zimbra/commercial/commercial.key
+  /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial.crt
+  /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial_ca.crt
+  /bin/cp -f ${LE_CRT} /tmp/${LE_DOMAIN}.crt
+  /bin/cp -f ${LE_FULL} /tmp/le-ca.crt
+  chown zimbra:zimbra /tmp/le-ca.crt /tmp/${LE_DOMAIN}.crt
+  /opt/zimbra/bin/zmcertmgr deploycrt comm /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt
+  /bin/rm -f /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt
+  log "Zimbra: Starting nginx/proxy."
+  sudo -u zimbra /opt/zimbra/bin/zmproxyctl start
+fi
+
