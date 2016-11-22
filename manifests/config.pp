@@ -32,6 +32,14 @@ class al_letsencrypt::config () {
       mode    => '0750',
       require => File['/etc/letsencrypt'],
     }
+    file { '/etc/letsencrypt/le-root.ca':
+      ensure  => file,
+      owner   => 'root',
+      group   => 'certs',
+      mode    => '0440',
+      require => File['/etc/letsencrypt'],
+      source  => 'puppet:///modules/al_letsencrypt/letsencrypt-root.ca',
+    }
 
     # The Email for deactivation purposes.
     $email = hiera ('contact')
