@@ -92,14 +92,8 @@ fi
 if [ ${IS_ZIMBRA} ] ; then
   log "Zimbra: disabling nginx/proxy."
   sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop 
-fi
-
-log "Starting certbox for ${LE_DOMAIN}."
-${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} -d ${LE_DOMAIN} || error "Unable to request certificate for ${LE_DOMAIN}."
-log "Certificate for ${LE_DOMAIN} created successfully."
-
-
-if [ ${IS_ZIMBRA} ] ; then
+  log "Zimbra: requesting certificate."
+  ${LE_BIN} certonly --standalone --keep-until-expiring ${EMAIL_ARG} -d "${LE_DOMAIN}" --noninteractive --agree-tos || error "Unable to request certificate for ${LE_DOMAIN}."
   log "Zimbra: Installing certificate."
   /bin/cp -f ${LE_KEY} /opt/zimbra/ssl/zimbra/commercial/commercial.key
   /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial.crt
@@ -111,5 +105,9 @@ if [ ${IS_ZIMBRA} ] ; then
   /bin/rm -f /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt
   log "Zimbra: Starting nginx/proxy."
   sudo -u zimbra /opt/zimbra/bin/zmproxyctl start
+else
+  log "Starting certbox for ${LE_DOMAIN}."
+  ${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} -d ${LE_DOMAIN} || error "Unable to request certificate for ${LE_DOMAIN}."
+  log "Certificate for ${LE_DOMAIN} created successfully."
 fi
 
