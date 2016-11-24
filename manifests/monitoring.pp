@@ -16,10 +16,19 @@ class al_letsencrypt::monitoring () {
         # And Icinga Client needs to be on, too.
         if ($::icinga::client::enable == true) {
 
+          # Normal Checks vs Zimba Checks
+          if ( $::al_letsencrypt::zimbra ) {
+            $ports = 'ZIMBRA'
+          }
+
+          if ( ! $ports ) {
+            $ports = '443'
+          }
+
           $::al_letsencrypt::domains.each |String $domain| {
             @@nagios_service { "check_le_cert_${::fqdn}_${domain}":
               ensure                => present,
-              check_command         => "check_certificate!${domain}!443",
+              check_command         => "check_certificate!${domain}!${ports}",
               check_interval        => '1440',
               check_period          => '24x7',
               contact_groups        => $::icinga::client::contactgroup,
