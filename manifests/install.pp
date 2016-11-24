@@ -87,4 +87,31 @@ class al_letsencrypt::install () {
     }
   }
 
+  #
+  # Monitoring.
+  #
+
+  # letsencrypt module needs to me on...
+  if ($::al_letsencrypt::enable) {
+
+    # We need some domains
+    if ($::al_letsencrypt::domains) {
+
+      # As well as monitoring needs to be requested.
+      if ($::al_letsencrypt::monitoring) {
+
+        # And Icinga Client needs to be on, too.
+        if ($::icinga::client::enable == true) {
+          file { "${::al_letsencrypt::nrpe_pluginpath}/check_certificate.sh":
+            ensure  => present,
+            owner   => 'root',
+            group   => 'root',
+            mode    => '0755',
+            content => template('al_letsencrypt/check_certificate.sh.erb'),
+          }
+        }
+      }
+    }
+  }
+
 }

@@ -19,7 +19,7 @@ class al_letsencrypt::monitoring () {
           $::al_letsencrypt::domains.each |String $domain| {
             @@nagios_service { "check_le_cert_${::fqdn}_${domain}":
               ensure                => present,
-              check_command         => "check_nrpe!check_le_cert!${domain}",
+              check_command         => "check_certificate!${domain}!443",
               check_interval        => '1440',
               check_period          => '24x7',
               contact_groups        => $::icinga::client::contactgroup,

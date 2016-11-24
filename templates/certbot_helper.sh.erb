@@ -1,4 +1,12 @@
 #! /bin/bash
+# This file is managed by
+#  ____  _   _ ____  ____  _____ _____
+# |  _ \| | | |  _ \|  _ \| ____|_   _|
+# | |_) | | | | |_) | |_) |  _|   | |
+# |  __/| |_| |  __/|  __/| |___  | |
+# |_|    \___/|_|   |_|   |_____| |_|
+#
+#      All changes will be overwritten
 
 #
 # Le French!
@@ -91,7 +99,7 @@ fi
 #
 if [ ${IS_ZIMBRA} ] ; then
   log "Zimbra: disabling nginx/proxy."
-  sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop 
+  sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop
   log "Zimbra: requesting certificate."
   ${LE_BIN} certonly --standalone --keep-until-expiring ${EMAIL_ARG} -d "${LE_DOMAIN}" --noninteractive --agree-tos || error "Unable to request certificate for ${LE_DOMAIN}."
   log "Zimbra: Installing certificate."
@@ -111,4 +119,3 @@ else
   ${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} -d ${LE_DOMAIN} || error "Unable to request certificate for ${LE_DOMAIN}."
   log "Certificate for ${LE_DOMAIN} created successfully."
 fi
-

@@ -6,6 +6,10 @@ class al_letsencrypt::params () {
   case ($::operatingsystem) {
 
     /(CentOS|RedHat|CloudLinux)/: {
+
+      # Icinga Module Path
+      $nrpe_pluginpath   = '/usr/lib64/nagios/plugins/contrib.d'
+
       case ($::os['release']['major']) {
         '7': {
           $le_binary = '/bin/certbot'
