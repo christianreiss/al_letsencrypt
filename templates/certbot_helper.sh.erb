@@ -97,7 +97,7 @@ fi
 #
 # Run it.
 #
-if [ ${IS_ZIMBRA} ] ; then
+if [ ${IS_ZIMBRA} == true ] ; then
   log "Zimbra: disabling nginx/proxy."
   sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop
   log "Zimbra: requesting certificate."
@@ -119,3 +119,4 @@ else
   ${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} -d ${LE_DOMAIN} || error "Unable to request certificate for ${LE_DOMAIN}."
   log "Certificate for ${LE_DOMAIN} created successfully."
 fi
+
