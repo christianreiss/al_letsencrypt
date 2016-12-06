@@ -62,7 +62,7 @@ fi
 #
 # We need a docroot.
 #
-if [ ${LE_DOCROOT_OVERRIDE} == "" ]; then
+if [ ${LE_DOCROOT_OVERRIDE} == "false" ]; then
   if [ ! -e "${LE_DOCROOT}" ]; then
     if [ ! -e "${LE_DOCROOT_FAILBACK}" ]; then
       error "Docroot ${LE_DOCROOT} does not exist."
