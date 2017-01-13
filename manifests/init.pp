@@ -12,6 +12,9 @@ class al_letsencrypt (
   # Email we supply to LetsEncrypt
   $email = false,
 
+  # Bitsize for certificates
+  $bits = '4096',
+
   # Option to override your DOCROOT_OVERRIDE
   $docroot_override = false,
 

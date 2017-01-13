@@ -12,7 +12,7 @@
 # Le French!
 #
 LE_BIN="<%= scope.lookupvar('::al_letsencrypt::le_binary')%>"
-LE_ARGS="--webroot --noninteractive --keep-until-expiring --quiet --agree-tos"
+LE_ARGS="--webroot --noninteractive --keep-until-expiring --quiet --agree-tos --rsa-key-size <%= scope.lookupvar('::al_letsencrypt::bits')%>"
 LE_LOG="<%= scope.lookupvar('::al_letsencrypt::le_logdir')%>/letsencrypt.log"
 LE_EMAIL="<%= scope.lookupvar('::al_letsencrypt::email')%>"
 LE_DOMAIN="$1"
@@ -77,14 +77,6 @@ else
 fi
 
 #
-# Check for domain existance.
-#
-if [ -e ${LE_CRT} ]; then
-  log "No action needed, cert for ${domain} already existing."
-  exit 0
-fi
-
-#
 # Email or unsafe registratrion?
 #
 if [ "${LE_EMAIL}" != "" ]; then
@@ -93,30 +85,120 @@ else
   EMAIL_ARG="--allow-unsafe-registration"
 fi
 
+#
+# Renew the Certs
+#
+if [ "$1" == "renew" ] ; then
+  if [ ${IS_ZIMBRA} == true ] ; then
+    log "Zimbra: disabling nginx/proxy."
+    sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop
+    ${LE_BIN} renew --quiet --keep-until-expiring --standalone ${EMAIL_ARG} --noninteractive --agree-tos --post-hook 'touch /tmp/.acme.restart' || error "Unable to renew certificates."
+    if [ ! -e /tmp/.acme.restart ] ; then
+      sudo -u zimbra /opt/zimbra/bin/zmproxyctl start
+    else
+      log "Zimbra: Installing certificate."
+      if [ ${LE_DOMAIN} == "" ] ; then
+        if [ "${RENEWED_DOMAINS}" == "" ] ; then
+          error "Can't install zimbra certificate; the renewal did not show what domain just got updated."
+        fi
+      fi
+      /bin/cp -f ${LE_KEY} /opt/zimbra/ssl/zimbra/commercial/commercial.key
+      /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial.crt
+      /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial_ca.crt
+      /bin/cp -f ${LE_CRT} /tmp/${LE_DOMAIN}.crt
+      /bin/cp -f ${LE_FULL} /tmp/le-ca.crt
+      cat /etc/letsencrypt/le-root.ca >> /tmp/le-ca.crt
+      chown zimbra:zimbra /tmp/le-ca.crt /tmp/${LE_DOMAIN}.crt
+      /opt/zimbra/bin/zmcertmgr deploycrt comm /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt || error "Deploying zimbra certificates failed."
+      /bin/rm -f /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt
+    fi
+  else
+    ${LE_BIN} renew --quiet --keep-until-expiring ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} --post-hook 'touch /tmp/.acme.restart' || error "Unable to renew certificates."
+  fi
+fi
 
 #
 # Run it.
 #
-if [ ${IS_ZIMBRA} == true ] ; then
-  log "Zimbra: disabling nginx/proxy."
-  sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop
-  log "Zimbra: requesting certificate."
-  ${LE_BIN} certonly --standalone --keep-until-expiring ${EMAIL_ARG} -d "${LE_DOMAIN}" --noninteractive --agree-tos || error "Unable to request certificate for ${LE_DOMAIN}."
-  log "Zimbra: Installing certificate."
-  /bin/cp -f ${LE_KEY} /opt/zimbra/ssl/zimbra/commercial/commercial.key
-  /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial.crt
-  /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial_ca.crt
-  /bin/cp -f ${LE_CRT} /tmp/${LE_DOMAIN}.crt
-  /bin/cp -f ${LE_FULL} /tmp/le-ca.crt
-  cat /etc/letsencrypt/le-root.ca >> /tmp/le-ca.crt
-  chown zimbra:zimbra /tmp/le-ca.crt /tmp/${LE_DOMAIN}.crt
-  /opt/zimbra/bin/zmcertmgr deploycrt comm /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt || error "Deploying zimbra certificates failed."
-  /bin/rm -f /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt
-  log "Zimbra: Starting nginx/proxy."
-  sudo -u zimbra /opt/zimbra/bin/zmproxyctl start
-else
-  log "Starting certbox for ${LE_DOMAIN}."
-  ${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} -d ${LE_DOMAIN} || error "Unable to request certificate for ${LE_DOMAIN}."
-  log "Certificate for ${LE_DOMAIN} created successfully."
+if [ "$1" != "renew" ] ; then
+  #
+  # Check for domain existance.
+  #
+  if [ -e ${LE_CRT} ]; then
+    log "No action needed, cert for ${domain} already existing."
+    exit 0
+  fi
+
+  if [ ${IS_ZIMBRA} == true ] ; then
+    log "Zimbra: disabling nginx/proxy."
+    sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop
+    log "Zimbra: requesting certificate."
+    ${LE_BIN} certonly --standalone --keep-until-expiring ${EMAIL_ARG} -d "${LE_DOMAIN}" --post-hook 'touch /tmp/.acme.restart' || error "Unable to request certificate for ${LE_DOMAIN}."
+    if [ ! -e /tmp/.acme.restart ] ; then
+      sudo -u zimbra /opt/zimbra/bin/zmproxyctl start
+    else
+      log "Zimbra: Installing certificate."
+      if [ ${LE_DOMAIN} == "" ] ; then
+        if [ "${RENEWED_DOMAINS}" == "" ] ; then
+          error "Can't install zimbra certificate; the renewal did not show what domain just got updated."
+        fi
+      fi
+      /bin/cp -f ${LE_KEY} /opt/zimbra/ssl/zimbra/commercial/commercial.key
+      /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial.crt
+      /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial_ca.crt
+      /bin/cp -f ${LE_CRT} /tmp/${LE_DOMAIN}.crt
+      /bin/cp -f ${LE_FULL} /tmp/le-ca.crt
+      cat /etc/letsencrypt/le-root.ca >> /tmp/le-ca.crt
+      chown zimbra:zimbra /tmp/le-ca.crt /tmp/${LE_DOMAIN}.crt
+      /opt/zimbra/bin/zmcertmgr deploycrt comm /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt || error "Deploying zimbra certificates failed."
+      /bin/rm -f /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt
+    fi
+  else
+    log "Starting certbox for ${LE_DOMAIN}."
+    ${LE_BIN} certonly ${LE_ARGS} --webroot-path ${DOCROOT} ${EMAIL_ARG} -d ${LE_DOMAIN} --post-hook 'touch /tmp/.acme.restart' || error "Unable to request certificate for ${LE_DOMAIN}."
+    log "Certificate for ${LE_DOMAIN} created successfully."
+  fi
+fi
+
+
+#
+# Restart Services.
+#
+if [ -e /tmp/.acme.restart ] ; then
+  if [ ${IS_ZIMBRA} == true ] ; then
+    # Restart Zimbra
+      log "Zimbra: disabling nginx/proxy."
+      sudo -u zimbra /opt/zimbra/bin/zmproxyctl stop
+      log "Zimbra: Starting nginx/proxy."
+      sudo -u zimbra /opt/zimbra/bin/zmproxyctl start
+  else
+    # Restart Other
+    nginxrunning=$(ss -lpn | grep 443 | grep nginx | wc -l)
+    apacherunning=$(ss -lpn | grep 443 | grep httpd | wc -l)
+    systemctl=$(which systemctl 2>/dev/null)
+
+    if [ ${systemctl} != "" ] ; then
+      # Systemd Servers
+      if [ "${nginxrunning}" -gt 0 ] ; then
+        # Running nginx
+        ${systemctl} restart nginx || error "Unable to restart nginx!"
+      fi
+      if [ "${apacherunning}" -gt 0 ] ; then
+        # Running apache
+        ${systemctl} restart httpd || error "Unable to restart apache!"
+      fi
+    else 
+      # Service Servers
+      if [ "${nginxrunning}" -gt 0 ] ; then
+        # Running nginx
+        service nginx restart || error "Unable to restart nginx!"
+      fi
+      if [ "${apacherunning}" -gt 0 ] ; then
+        # Running apache
+        service httpd restart || error "Unable to restart apache!"
+      fi
+    fi
+  fi
+  rm -f /tmp/.acme.restart
 fi
 
