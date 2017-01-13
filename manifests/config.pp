@@ -68,7 +68,7 @@ class al_letsencrypt::config () {
     # Renew-Cron (add)
     cron { 'letsencrypt-renew':
       ensure  => present,
-      command => "${::al_letsencrypt::le_binary} renew --quiet --keep-until-expiring",
+      command => '/usr/local/sbin/certbot_helper.sh renew',
       user    => 'root',
       minute  => fqdn_rand(59, "${::fqdn}-le-renew"),
       hour    => '4',
