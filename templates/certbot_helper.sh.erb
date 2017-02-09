@@ -102,6 +102,14 @@ if [ "$1" == "renew" ] ; then
           error "Can't install zimbra certificate; the renewal did not show what domain just got updated."
         fi
       fi
+
+      # Zimbra Workaround
+      LE_DOMAIN=$(hostname -f)
+      LE_CRT="/etc/letsencrypt/live/${LE_DOMAIN}/cert.pem"
+      LE_KEY="/etc/letsencrypt/live/${LE_DOMAIN}/privkey.pem"
+      LE_FULL="/etc/letsencrypt/live/${LE_DOMAIN}/fullchain.pem"
+      LE_DOCROOT="/var/www/vhosts/${LE_DOMAIN}"
+
       /bin/cp -f ${LE_KEY} /opt/zimbra/ssl/zimbra/commercial/commercial.key
       /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial.crt
       /bin/rm -f /opt/zimbra/ssl/zimbra/commercial/commercial_ca.crt
@@ -109,7 +117,7 @@ if [ "$1" == "renew" ] ; then
       /bin/cp -f ${LE_FULL} /tmp/le-ca.crt
       cat /etc/letsencrypt/le-root.ca >> /tmp/le-ca.crt
       chown zimbra:zimbra /tmp/le-ca.crt /tmp/${LE_DOMAIN}.crt
-      /opt/zimbra/bin/zmcertmgr deploycrt comm /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt || error "Deploying zimbra certificates failed."
+      sudo -u zimbra /opt/zimbra/bin/zmcertmgr deploycrt comm /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt || error "Deploying zimbra certificates failed."
       /bin/rm -f /tmp/${LE_DOMAIN}.crt /tmp/le-ca.crt
     fi
   else
